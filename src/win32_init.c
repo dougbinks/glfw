@@ -673,6 +673,7 @@ GLFWbool _glfwConnectWin32(int platformID, _GLFWplatform* platform)
         .setGammaRamp = _glfwSetGammaRampWin32,
         .createWindow = _glfwCreateWindowWin32,
         .destroyWindow = _glfwDestroyWindowWin32,
+        .getWindowTitle = _glfwGetWindowTitleWin32,
         .setWindowTitle = _glfwSetWindowTitleWin32,
         .setWindowIcon = _glfwSetWindowIconWin32,
         .getWindowPos = _glfwGetWindowPosWin32,

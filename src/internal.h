@@ -701,6 +701,7 @@ struct _GLFWplatform
     // window
     GLFWbool (*createWindow)(_GLFWwindow*,const _GLFWwndconfig*,const _GLFWctxconfig*,const _GLFWfbconfig*);
     void (*destroyWindow)(_GLFWwindow*);
+    char* (*getWindowTitle)(_GLFWwindow* window);
     void (*setWindowTitle)(_GLFWwindow*,const char*);
     void (*setWindowIcon)(_GLFWwindow*,int,const GLFWimage*);
     void (*getWindowPos)(_GLFWwindow*,int*,int*);
