@@ -177,6 +177,11 @@ void _glfwDestroyWindowNull(_GLFWwindow* window)
         window->context.destroy(window);
 }
 
+char* _glfwGetWindowTitleNull(_GLFWwindow* window)
+{
+    return NULL;
+}
+
 void _glfwSetWindowTitleNull(_GLFWwindow* window, const char* title)
 {
 }
