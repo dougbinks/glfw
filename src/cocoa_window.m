@@ -1017,6 +1017,14 @@ void _glfwDestroyWindowCocoa(_GLFWwindow* window)
     } // autoreleasepool
 }
 
+void _glfwGetWindowTitleCocoa(_GLFWwindow* window)
+{
+    // TODO: This is UNTESTED
+    @autoreleasepool {
+    return window->ns.object.title;
+    }
+}
+
 void _glfwSetWindowTitleCocoa(_GLFWwindow* window, const char* title)
 {
     @autoreleasepool {
