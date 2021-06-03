@@ -2108,6 +2108,13 @@ void _glfwDestroyWindowWayland(_GLFWwindow* window)
     _glfw_free(window->wl.scales);
 }
 
+char* _glfwGetWindowTitleWayland(_GLFWwindow* window)
+{
+    if(window->wl.title)
+        return _glfw_strdup(window->wl.title);
+    return calloc(1, sizeof(char));
+}
+
 void _glfwSetWindowTitleWayland(_GLFWwindow* window, const char* title)
 {
     char* copy = _glfw_strdup(title);
