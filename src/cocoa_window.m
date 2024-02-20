@@ -2062,7 +2062,7 @@ GLFWAPI id glfwGetCocoaView(GLFWwindow* handle)
     {
         _glfwInputError(GLFW_PLATFORM_UNAVAILABLE,
                         "Cocoa: Platform not initialized");
-        return NULL;
+        return nil;
     }
 
     return window->ns.view;
