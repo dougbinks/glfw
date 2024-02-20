@@ -152,6 +152,7 @@ video tutorials.
  - Jonathan Mercier
  - Marcel Metz
  - Liam Middlebrook
+ - mightgoyardstill
  - Ave Milia
  - Icyllis Milica
  - Jonathan Miller
