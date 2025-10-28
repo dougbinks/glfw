@@ -2033,9 +2033,9 @@ void _processRawInput(void)
 {
     UINT size = 0;
     UINT riSize = 0;
-    _GLFWwindow* window = _glfw.windowListHead;
+    _GLFWwindow* window = _glfw.win32.disabledCursorWindow;
 
-    if (_glfw.win32.disabledCursorWindow != window)
+    if (!window)
         return;
     if (!window->rawMouseMotion)
         return;
