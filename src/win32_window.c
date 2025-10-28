@@ -48,6 +48,8 @@ typedef UINT64 QWORD; // Needed for NEXTRAWINPUTBLOCK()
 #define RI_MOUSE_HWHEEL 0x0800
 #endif
 
+#define GLFW_MAX_RAWINPUT_BUFFER_SIZE (256 * sizeof(RAWINPUTHEADER))
+#define GLFW_MIN_RAWINPUT_BUFFER_SIZE (16 * sizeof(RAWINPUTHEADER))
 
 // Returns the window style for the specified window
 //
@@ -2047,175 +2049,180 @@ void _processRawInput(void)
         return;
     }
 
-    UINT byteCount = riSize * 16;
-
-    if (byteCount > (UINT)_glfw.win32.rawInputSize)
+    UINT bufferSize = _glfw_min(riSize, GLFW_MAX_RAWINPUT_BUFFER_SIZE);
+    if (bufferSize > (UINT)_glfw.win32.rawInputSize)
     {
+        bufferSize = _glfw_max(bufferSize, GLFW_MIN_RAWINPUT_BUFFER_SIZE);
         _glfw_free(_glfw.win32.rawInput);
-        _glfw.win32.rawInput = _glfw_calloc(byteCount, 1);
-        _glfw.win32.rawInputSize = byteCount;
+        _glfw.win32.rawInput = _glfw_calloc(bufferSize, 1);
+        _glfw.win32.rawInputSize = bufferSize;
     }
 
-    // read it (actually) this time into the buffer
-    size = _glfw.win32.rawInputSize;
-    result = GetRawInputBuffer(_glfw.win32.rawInput, &size, sizeof(RAWINPUTHEADER));
-    if (result == (UINT)-1)
+    while(true)
     {
-        _glfwInputError(GLFW_PLATFORM_ERROR,
-                        "Win32: Failed to retrieve raw input buffer");
-        _glfw_free(_glfw.win32.rawInput);
-        return;
-    }
+        // read it (actually) this time into the buffer
+        size = _glfw.win32.rawInputSize;
+        result = GetRawInputBuffer(_glfw.win32.rawInput, &size, sizeof(RAWINPUTHEADER));
+        if (result == (UINT)-1)
+        {
+            _glfwInputError(GLFW_PLATFORM_ERROR,
+                            "Win32: Failed to retrieve raw input buffer");
+            return;
+        }
 
-    // print msg count
-    //printf("raw input count: %u\n", result);
+        // print msg count
+        //printf("raw input count: %u\n", result);
 
-    UINT riCount = result;
+        UINT riCount = result;
+        if (riCount == 0) {
+            break;
+        }
 
-    RAWINPUT* data = _glfw.win32.rawInput;
+        RAWINPUT* data = _glfw.win32.rawInput;
 
-    for (unsigned int i = 0; i < riCount; ++i)
-    {
-        if (data->header.dwType == RIM_TYPEMOUSE) {
-            int dx = 0, dy = 0;
+        for (unsigned int i = 0; i < riCount; ++i)
+        {
+            if (data->header.dwType == RIM_TYPEMOUSE) {
+                int dx = 0, dy = 0;
             
-            if (data->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
-            {
-                POINT pos = {0};
-                int width, height;
-
-                if (data->data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
+                if (data->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
                 {
-                    pos.x += GetSystemMetrics(SM_XVIRTUALSCREEN);
-                    pos.y += GetSystemMetrics(SM_YVIRTUALSCREEN);
-                    width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-                    height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+                    POINT pos = {0};
+                    int width, height;
+
+                    if (data->data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
+                    {
+                        pos.x += GetSystemMetrics(SM_XVIRTUALSCREEN);
+                        pos.y += GetSystemMetrics(SM_YVIRTUALSCREEN);
+                        width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+                        height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+                    }
+                    else
+                    {
+                        width = GetSystemMetrics(SM_CXSCREEN);
+                        height = GetSystemMetrics(SM_CYSCREEN);
+                    }
+
+                    pos.x += (int)((data->data.mouse.lLastX / 65535.f) * width);
+                    pos.y += (int)((data->data.mouse.lLastY / 65535.f) * height);
+                    ScreenToClient(window->win32.handle, &pos);
+
+                    dx = pos.x - window->win32.lastCursorPosX;
+                    dy = pos.y - window->win32.lastCursorPosY;
                 }
                 else
                 {
-                    width = GetSystemMetrics(SM_CXSCREEN);
-                    height = GetSystemMetrics(SM_CYSCREEN);
+                    if (data->data.mouse.lLastX || data->data.mouse.lLastY)
+                    {
+                        dx = data->data.mouse.lLastX;
+                        dy = data->data.mouse.lLastY;
+                    }
                 }
 
-                pos.x += (int)((data->data.mouse.lLastX / 65535.f) * width);
-                pos.y += (int)((data->data.mouse.lLastY / 65535.f) * height);
-                ScreenToClient(window->win32.handle, &pos);
-
-                dx = pos.x - window->win32.lastCursorPosX;
-                dy = pos.y - window->win32.lastCursorPosY;
-            }
-            else
-            {
-                if (data->data.mouse.lLastX || data->data.mouse.lLastY)
+                if (dx != 0 || dy != 0)
                 {
-                    dx = data->data.mouse.lLastX;
-                    dy = data->data.mouse.lLastY;
+                    _glfwInputCursorPos(window,
+                                        window->virtualCursorPosX + dx,
+                                        window->virtualCursorPosY + dy);
+
+                    window->win32.lastCursorPosX += dx;
+                    window->win32.lastCursorPosY += dy;
                 }
-            }
 
-            if (dx != 0 || dy != 0)
-            {
-                _glfwInputCursorPos(window,
-                                    window->virtualCursorPosX + dx,
-                                    window->virtualCursorPosY + dy);
-
-                window->win32.lastCursorPosX += dx;
-                window->win32.lastCursorPosY += dy;
-            }
-
-            // Instead of reposting the events, we duplicate the button events' handlers here.
+                // Instead of reposting the events, we duplicate the button events' handlers here.
 
             
-            USHORT buttonFlags = data->data.mouse.usButtonFlags;
-            HWND hwnd = window->win32.handle;
+                USHORT buttonFlags = data->data.mouse.usButtonFlags;
+                HWND hwnd = window->win32.handle;
 
-            // if any down or up button (anything except RI_MOUSE_WHEEL or RI_MOUSE_HWHEEL), process
-            if (buttonFlags & 0xFFFF & ~(RI_MOUSE_WHEEL | RI_MOUSE_HWHEEL))
-            {
-                int i;
-
-                for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
+                // if any down or up button (anything except RI_MOUSE_WHEEL or RI_MOUSE_HWHEEL), process
+                if (buttonFlags & 0xFFFF & ~(RI_MOUSE_WHEEL | RI_MOUSE_HWHEEL))
                 {
-                    if (window->mouseButtons[i] == GLFW_PRESS)
-                        break;
-                }
+                    int i;
 
-                if (i > GLFW_MOUSE_BUTTON_LAST)
-                    SetCapture(hwnd);
+                    for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
+                    {
+                        if (window->mouseButtons[i] == GLFW_PRESS)
+                            break;
+                    }
+
+                    if (i > GLFW_MOUSE_BUTTON_LAST)
+                        SetCapture(hwnd);
                 
-                if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
-                {
-                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS, getKeyMods());
-                }
+                    if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+                    {
+                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS, getKeyMods());
+                    }
 
-                if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP)
-                {
-                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_RELEASE, getKeyMods());
-                }
+                    if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP)
+                    {
+                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_RELEASE, getKeyMods());
+                    }
                     
-                if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
-                {
-                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_PRESS, getKeyMods());
-                }
+                    if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+                    {
+                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_PRESS, getKeyMods());
+                    }
 
-                if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
-                {
-                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_RELEASE, getKeyMods());
-                }
+                    if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
+                    {
+                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_RELEASE, getKeyMods());
+                    }
                     
-                if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
-                {
-                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_PRESS, getKeyMods());
-                }
+                    if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
+                    {
+                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_PRESS, getKeyMods());
+                    }
 
-                if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
-                {
-                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_RELEASE, getKeyMods());
-                }
+                    if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
+                    {
+                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_RELEASE, getKeyMods());
+                    }
                     
-                if (buttonFlags & RI_MOUSE_BUTTON_4_DOWN)
-                {
-                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_4, GLFW_PRESS, getKeyMods());
-                }
+                    if (buttonFlags & RI_MOUSE_BUTTON_4_DOWN)
+                    {
+                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_4, GLFW_PRESS, getKeyMods());
+                    }
 
-                if (buttonFlags & RI_MOUSE_BUTTON_4_UP)
-                {
-                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_4, GLFW_RELEASE, getKeyMods());
-                }
+                    if (buttonFlags & RI_MOUSE_BUTTON_4_UP)
+                    {
+                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_4, GLFW_RELEASE, getKeyMods());
+                    }
                     
-                if (buttonFlags & RI_MOUSE_BUTTON_5_DOWN)
-                {
-                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_5, GLFW_PRESS, getKeyMods());
-                }
+                    if (buttonFlags & RI_MOUSE_BUTTON_5_DOWN)
+                    {
+                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_5, GLFW_PRESS, getKeyMods());
+                    }
 
-                if (buttonFlags & RI_MOUSE_BUTTON_5_UP)
-                {
-                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_5, GLFW_RELEASE, getKeyMods());
-                }
+                    if (buttonFlags & RI_MOUSE_BUTTON_5_UP)
+                    {
+                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_5, GLFW_RELEASE, getKeyMods());
+                    }
 
-                for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
-                {
-                    if (window->mouseButtons[i] == GLFW_PRESS)
-                        break;
-                }
+                    for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
+                    {
+                        if (window->mouseButtons[i] == GLFW_PRESS)
+                            break;
+                    }
 
-                if (i > GLFW_MOUSE_BUTTON_LAST)
-                    ReleaseCapture();
+                    if (i > GLFW_MOUSE_BUTTON_LAST)
+                        ReleaseCapture();
+                }
+                // Handle mouse wheel events
+                if (buttonFlags & RI_MOUSE_WHEEL)
+                {
+                    SHORT wheelDelta = (SHORT)data->data.mouse.usButtonData;
+                    _glfwInputScroll(window, 0.0, wheelDelta / (double) WHEEL_DELTA);
+                }
+                if (buttonFlags & RI_MOUSE_HWHEEL)
+                {
+                    SHORT wheelDelta = (SHORT)data->data.mouse.usButtonData;
+                    _glfwInputScroll(window, -wheelDelta / (double) WHEEL_DELTA, 0.0);
+                }
             }
-            // Handle mouse wheel events
-            if (buttonFlags & RI_MOUSE_WHEEL)
-            {
-                SHORT wheelDelta = (SHORT)data->data.mouse.usButtonData;
-                _glfwInputScroll(window, 0.0, wheelDelta / (double) WHEEL_DELTA);
-            }
-            if (buttonFlags & RI_MOUSE_HWHEEL)
-            {
-                SHORT wheelDelta = (SHORT)data->data.mouse.usButtonData;
-                _glfwInputScroll(window, -wheelDelta / (double) WHEEL_DELTA, 0.0);
-            }
+
+            data = NEXTRAWINPUTBLOCK(data);
         }
-
-        data = NEXTRAWINPUTBLOCK(data);
     }
 }
 
