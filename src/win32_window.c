@@ -2035,10 +2035,8 @@ void _processRawInput(void)
     UINT riSize = 0;
     _GLFWwindow* window = _glfw.win32.disabledCursorWindow;
 
-    if (!window)
-        return;
-    if (!window->rawMouseMotion)
-        return;
+    assert(window != NULL);
+    assert(window->rawMouseMotion);
 
     // get the size of the raw input buffer
     UINT result = GetRawInputBuffer(NULL, &riSize, sizeof(RAWINPUTHEADER));
@@ -2226,9 +2224,10 @@ void _glfwPollEventsWin32(void)
 {
     MSG msg;
     HWND handle;
-    _GLFWwindow* window = _glfw.windowListHead;
+    _GLFWwindow* window;
 
-    _processRawInput(); // this does the whole `GetRawInputBuffer` thing
+    if (_glfw.win32.disabledCursorWindow && _glfw.win32.disabledCursorWindow->rawMouseMotion)
+        _processRawInput();
 
     while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
     {
