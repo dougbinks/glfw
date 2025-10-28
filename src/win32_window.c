@@ -2134,63 +2134,7 @@ void _processRawInput(void)
             // if any down or up button (anything except RI_MOUSE_WHEEL or RI_MOUSE_HWHEEL), process
             if (buttonFlags & 0xFFFF & ~(RI_MOUSE_WHEEL | RI_MOUSE_HWHEEL))
             {
-                int i, button = -1, action = -1;
-                
-                if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
-                {
-                    button = GLFW_MOUSE_BUTTON_LEFT;
-                    action = GLFW_PRESS;
-                }
-
-                if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP)
-                {
-                    button = GLFW_MOUSE_BUTTON_LEFT;
-                    action = GLFW_RELEASE;
-                }
-                    
-                if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
-                {
-                    button = GLFW_MOUSE_BUTTON_RIGHT;
-                    action = GLFW_PRESS;
-                }
-                if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
-                {
-                    button = GLFW_MOUSE_BUTTON_RIGHT;
-                    action = GLFW_RELEASE;
-                }
-                    
-                if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
-                {
-                    button = GLFW_MOUSE_BUTTON_MIDDLE;
-                    action = GLFW_PRESS;
-                }
-                if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
-                {
-                    button = GLFW_MOUSE_BUTTON_MIDDLE;
-                    action = GLFW_RELEASE;
-                }
-                    
-                if (buttonFlags & RI_MOUSE_BUTTON_4_DOWN)
-                {
-                    button = GLFW_MOUSE_BUTTON_4;
-                    action = GLFW_PRESS;
-                }
-                if (buttonFlags & RI_MOUSE_BUTTON_4_UP)
-                {
-                    button = GLFW_MOUSE_BUTTON_4;
-                    action = GLFW_RELEASE;
-                }
-                    
-                if (buttonFlags & RI_MOUSE_BUTTON_5_DOWN)
-                {
-                    button = GLFW_MOUSE_BUTTON_5;
-                    action = GLFW_PRESS;
-                }
-                if (buttonFlags & RI_MOUSE_BUTTON_5_UP)
-                {
-                    button = GLFW_MOUSE_BUTTON_5;
-                    action = GLFW_RELEASE;
-                }
+                int i;
 
                 for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
                 {
@@ -2201,7 +2145,55 @@ void _processRawInput(void)
                 if (i > GLFW_MOUSE_BUTTON_LAST)
                     SetCapture(hwnd);
                 
-                _glfwInputMouseClick(window, button, action, getKeyMods());
+                if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+                {
+                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS, getKeyMods());
+                }
+
+                if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP)
+                {
+                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_RELEASE, getKeyMods());
+                }
+                    
+                if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+                {
+                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_PRESS, getKeyMods());
+                }
+
+                if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
+                {
+                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_RELEASE, getKeyMods());
+                }
+                    
+                if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
+                {
+                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_PRESS, getKeyMods());
+                }
+
+                if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
+                {
+                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_RELEASE, getKeyMods());
+                }
+                    
+                if (buttonFlags & RI_MOUSE_BUTTON_4_DOWN)
+                {
+                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_4, GLFW_PRESS, getKeyMods());
+                }
+
+                if (buttonFlags & RI_MOUSE_BUTTON_4_UP)
+                {
+                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_4, GLFW_RELEASE, getKeyMods());
+                }
+                    
+                if (buttonFlags & RI_MOUSE_BUTTON_5_DOWN)
+                {
+                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_5, GLFW_PRESS, getKeyMods());
+                }
+
+                if (buttonFlags & RI_MOUSE_BUTTON_5_UP)
+                {
+                    _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_5, GLFW_RELEASE, getKeyMods());
+                }
 
                 for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
                 {
