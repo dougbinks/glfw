@@ -14,6 +14,13 @@ values over 8. For compatibility with older versions, the
 @ref GLFW_UNLIMITED_MOUSE_BUTTONS input mode needs to be set to make use of
 this.
 
+
+### Improved raw mouse motion performance using buffered input on Windows {#win32_buff_raw_mouse}
+
+On the Windows platform raw mouse motion now uses a buffered input approach
+for significantly improved performance, especially when using a high poll rate
+mouse.
+
 ## Caveats {#caveats}
 
 ## Deprecations {#deprecations}
