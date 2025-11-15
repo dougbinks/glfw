@@ -154,6 +154,18 @@ static void cursor_position_callback(GLFWwindow* window, double x, double y)
     cursor_y = y;
 }
 
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (action == GLFW_PRESS )
+    {
+        printf("%0.3f: mouse button %d PRESSED\n", glfwGetTime(), button );
+    }
+    else
+    {
+        printf("%0.3f: mouse button %d RELEASED\n", glfwGetTime(), button );
+    }
+}
+
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (action != GLFW_PRESS)
@@ -415,6 +427,7 @@ int main(void)
 
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     while (!glfwWindowShouldClose(window))
     {

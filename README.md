@@ -130,6 +130,7 @@ information on what to include when reporting a bug.
  - Updated minimum CMake version to 3.16 (#2541)
  - Removed support for building with original MinGW (#2540)
  - [Win32] Removed support for Windows XP and Vista (#2505)
+ - [Win32] Improved raw mouse motion performance using buffered input (#2684) (#2750)
  - [Cocoa] Added `QuartzCore` framework as link-time dependency
  - [Cocoa] Removed support for OS X 10.10 Yosemite and earlier (#2506)
  - [Wayland] Bugfix: The fractional scaling related objects were not destroyed

@@ -192,6 +192,7 @@ video tutorials.
  - Denis Ovod
  - Ozzy
  - Andri Pálsson
+ - Pannoniae
  - luz paz
  - Peoro
  - Braden Pellett

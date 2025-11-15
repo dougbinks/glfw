@@ -36,6 +36,13 @@ GLFW now provides the @ref glfwGetGLXFBConfig native access function for
 querying the `GLXFBConfig` of a window that has a `GLXWindow`.
 
 
+### Improved raw mouse motion performance using buffered input on Windows {#win32_buff_raw_mouse}
+
+On the Windows platform raw mouse motion now uses a buffered input approach
+for significantly improved performance, especially when using a high poll rate
+mouse.
+
+
 ## Caveats {#caveats}
 
 ## Deprecations {#deprecations}
