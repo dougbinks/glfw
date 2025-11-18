@@ -2082,7 +2082,8 @@ void _processRawInput(void)
 
         for (unsigned int i = 0; i < riCount; ++i)
         {
-            if (data->header.dwType == RIM_TYPEMOUSE) {
+            if (data->header.dwType == RIM_TYPEMOUSE)
+            {
                 int dx = 0, dy = 0;
             
                 // a callback might change raw input status, in which case
