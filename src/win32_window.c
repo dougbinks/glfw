@@ -2085,48 +2085,54 @@ void _processRawInput(void)
             if (data->header.dwType == RIM_TYPEMOUSE) {
                 int dx = 0, dy = 0;
             
-                if (data->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
+                // a callback might change raw input status, in which case
+                // we stop inputing movement but process mouse button inputs
+                if (window == _glfw.win32.disabledCursorWindow
+                    && _glfw.win32.disabledCursorWindow->rawMouseMotion)
                 {
-                    POINT pos = {0};
-                    int width, height;
-
-                    if (data->data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
+                    if (data->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
                     {
-                        pos.x += GetSystemMetrics(SM_XVIRTUALSCREEN);
-                        pos.y += GetSystemMetrics(SM_YVIRTUALSCREEN);
-                        width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-                        height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+                        POINT pos = {0};
+                        int width, height;
+
+                        if (data->data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
+                        {
+                            pos.x += GetSystemMetrics(SM_XVIRTUALSCREEN);
+                            pos.y += GetSystemMetrics(SM_YVIRTUALSCREEN);
+                            width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+                            height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+                        }
+                        else
+                        {
+                            width = GetSystemMetrics(SM_CXSCREEN);
+                            height = GetSystemMetrics(SM_CYSCREEN);
+                        }
+
+                        pos.x += (int)((data->data.mouse.lLastX / 65535.f) * width);
+                        pos.y += (int)((data->data.mouse.lLastY / 65535.f) * height);
+                        ScreenToClient(window->win32.handle, &pos);
+
+                        dx = pos.x - window->win32.lastCursorPosX;
+                        dy = pos.y - window->win32.lastCursorPosY;
                     }
                     else
                     {
-                        width = GetSystemMetrics(SM_CXSCREEN);
-                        height = GetSystemMetrics(SM_CYSCREEN);
+                        if (data->data.mouse.lLastX || data->data.mouse.lLastY)
+                        {
+                            dx = data->data.mouse.lLastX;
+                            dy = data->data.mouse.lLastY;
+                        }
                     }
 
-                    pos.x += (int)((data->data.mouse.lLastX / 65535.f) * width);
-                    pos.y += (int)((data->data.mouse.lLastY / 65535.f) * height);
-                    ScreenToClient(window->win32.handle, &pos);
-
-                    dx = pos.x - window->win32.lastCursorPosX;
-                    dy = pos.y - window->win32.lastCursorPosY;
-                }
-                else
-                {
-                    if (data->data.mouse.lLastX || data->data.mouse.lLastY)
+                    if (dx != 0 || dy != 0)
                     {
-                        dx = data->data.mouse.lLastX;
-                        dy = data->data.mouse.lLastY;
+                        _glfwInputCursorPos(window,
+                                            window->virtualCursorPosX + dx,
+                                            window->virtualCursorPosY + dy);
+
+                        window->win32.lastCursorPosX += dx;
+                        window->win32.lastCursorPosY += dy;
                     }
-                }
-
-                if (dx != 0 || dy != 0)
-                {
-                    _glfwInputCursorPos(window,
-                                        window->virtualCursorPosX + dx,
-                                        window->virtualCursorPosY + dy);
-
-                    window->win32.lastCursorPosX += dx;
-                    window->win32.lastCursorPosY += dy;
                 }
 
                 // Instead of reposting the events, we duplicate the button events' handlers here.
