@@ -2145,9 +2145,6 @@ void _processRawInput(void)
                         if (window->mouseButtons[i] == GLFW_PRESS)
                             break;
                     }
-
-                    if (i > GLFW_MOUSE_BUTTON_LAST)
-                        SetCapture(hwnd);
                 
                     if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
                     {
@@ -2204,9 +2201,6 @@ void _processRawInput(void)
                         if (window->mouseButtons[i] == GLFW_PRESS)
                             break;
                     }
-
-                    if (i > GLFW_MOUSE_BUTTON_LAST)
-                        ReleaseCapture();
                 }
                 // Handle mouse wheel events
                 if (buttonFlags & RI_MOUSE_WHEEL)
