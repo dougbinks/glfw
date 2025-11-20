@@ -2070,9 +2070,6 @@ void _processRawInput(void)
             return;
         }
 
-        // print msg count
-        //printf("raw input count: %u\n", result);
-
         UINT riCount = result;
         if (riCount == 0) {
             break;
