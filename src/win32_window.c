@@ -2163,25 +2163,25 @@ void _processRawInput(void)
                         if (window->mouseButtons[i] == GLFW_PRESS)
                             break;
                     }
-                
+
                     if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
                     {
-                        _glfwInputRawMouseClick(window, WM_LBUTTONDOWN, 0);
+                        _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_RBUTTONDOWN : WM_LBUTTONDOWN, 0);
                     }
 
                     if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP)
                     {
-                        _glfwInputRawMouseClick(window, WM_LBUTTONUP, 0);
+                        _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_RBUTTONUP : WM_LBUTTONUP, 0);
                     }
                     
                     if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
                     {
-                        _glfwInputRawMouseClick(window, WM_RBUTTONDOWN, 0);
+                        _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_LBUTTONDOWN : WM_RBUTTONDOWN, 0);
                     }
 
                     if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
                     {
-                        _glfwInputRawMouseClick(window, WM_RBUTTONUP, 0);
+                        _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_LBUTTONUP : WM_RBUTTONUP, 0);
                     }
                     
                     if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
