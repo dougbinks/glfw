@@ -2045,6 +2045,18 @@ void _glfwInputRawMouseClick(_GLFWwindow* window, UINT message, int wParam)
     }
 }
 
+void _glfwUpdateKeyState(INT key, BYTE state)
+{
+    BYTE keyState[256];
+    GetKeyboardState(keyState);
+    if (key >= 0 && key < 256 && keyState[key] != state)
+    {
+        keyState[key] = state;
+        SetKeyboardState(keyState);
+    }
+}
+
+
 void _processRawInput(void)
 {
     UINT size = 0;
@@ -2166,31 +2178,37 @@ void _processRawInput(void)
 
                     if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
                     {
+                        _glfwUpdateKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON, 1 << 7);
                         _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_RBUTTONDOWN : WM_LBUTTONDOWN, 0);
                     }
 
                     if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP)
                     {
+                        _glfwUpdateKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON, 0);
                         _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_RBUTTONUP : WM_LBUTTONUP, 0);
                     }
                     
                     if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
                     {
+                        _glfwUpdateKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_LBUTTON : VK_RBUTTON, 1 << 7);
                         _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_LBUTTONDOWN : WM_RBUTTONDOWN, 0);
                     }
 
                     if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
                     {
+                        _glfwUpdateKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_LBUTTON : VK_RBUTTON, 0);
                         _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_LBUTTONUP : WM_RBUTTONUP, 0);
                     }
                     
                     if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
                     {
+                        _glfwUpdateKeyState(VK_MBUTTON, 1 << 7);
                         _glfwInputRawMouseClick(window, WM_MBUTTONDOWN, 0);
                     }
 
                     if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
                     {
+                        _glfwUpdateKeyState(VK_MBUTTON, 0);
                         _glfwInputRawMouseClick(window, WM_MBUTTONUP, 0);
                     }
                     
