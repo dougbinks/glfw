@@ -3,7 +3,22 @@
 [TOC]
 
 
+## Why was there no 3.5.0 release?
+
+Due to a misconfigured tool, an incorrect `3.5.0` tag was briefly made available in the
+main Git repository.  Thanks to the manual intervention of many packaging volunteers this
+has been almost entirely rolled back.  To make sure the first actual release of GLFW 3.5
+replaces the incorrect tag everywhere, the first release is named 3.5.1.
+
+
 ## New features {#features}
+
+### Improved raw mouse motion performance using buffered input on Windows {#win32_buff_raw_mouse}
+
+On the Windows platform raw mouse motion now uses a buffered input approach
+for significantly improved performance, especially when using a high poll rate
+mouse.
+
 
 ### Unlimited mouse buttons {#unlimited_mouse_buttons}
 
@@ -15,11 +30,17 @@ values over 8. For compatibility with older versions, the
 this.
 
 
-### Improved raw mouse motion performance using buffered input on Windows {#win32_buff_raw_mouse}
+### EGLConfig native access function {#eglconfig}
 
-On the Windows platform raw mouse motion now uses a buffered input approach
-for significantly improved performance, especially when using a high poll rate
-mouse.
+GLFW now provides the @ref glfwGetEGLConfig native access function for querying
+the `EGLConfig` of a window that has a `EGLSurface`.
+
+
+### GLXFBConfig native access function {#glxfbconfig}
+
+GLFW now provides the @ref glfwGetGLXFBConfig native access function for
+querying the `GLXFBConfig` of a window that has a `GLXWindow`.
+
 
 ## Caveats {#caveats}
 
@@ -45,6 +66,10 @@ actively maintained and available on many platforms.
 ## New symbols {#new_symbols}
 
 ### New functions {#new_functions}
+
+ - @ref glfwGetEGLConfig
+ - @ref glfwGetGLXFBConfig
+
 
 ### New types {#new_types}
 
