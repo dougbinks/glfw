@@ -2031,6 +2031,19 @@ GLFWbool _glfwRawMouseMotionSupportedWin32(void)
     return GLFW_TRUE;
 }
 
+void _glfwInputRawMouseClick(_GLFWwindow* window, UINT message, int wParam)
+{
+    if (window->win32.handle)
+    {
+        MSG msg;
+        // NOTE: omit setting wParam (modifiers) and lParam (cursor coordinate) as we do not use them.
+        msg.hwnd = window->win32.handle;
+        msg.message = message;
+        msg.wParam = wParam;
+        // HACK: Use DispatchMessage to make Windows aware of the updated button state when using RIDEV_NOLEGACY.
+        DispatchMessageW(&msg);
+    }
+}
 
 void _processRawInput(void)
 {
@@ -2153,52 +2166,52 @@ void _processRawInput(void)
                 
                     if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
                     {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS, getKeyMods());
+                        _glfwInputRawMouseClick(window, WM_LBUTTONDOWN, 0);
                     }
 
                     if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP)
                     {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_RELEASE, getKeyMods());
+                        _glfwInputRawMouseClick(window, WM_LBUTTONUP, 0);
                     }
                     
                     if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
                     {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_PRESS, getKeyMods());
+                        _glfwInputRawMouseClick(window, WM_RBUTTONDOWN, 0);
                     }
 
                     if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
                     {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_RELEASE, getKeyMods());
+                        _glfwInputRawMouseClick(window, WM_RBUTTONUP, 0);
                     }
                     
                     if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
                     {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_PRESS, getKeyMods());
+                        _glfwInputRawMouseClick(window, WM_MBUTTONDOWN, 0);
                     }
 
                     if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
                     {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_RELEASE, getKeyMods());
+                        _glfwInputRawMouseClick(window, WM_MBUTTONUP, 0);
                     }
                     
                     if (buttonFlags & RI_MOUSE_BUTTON_4_DOWN)
                     {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_4, GLFW_PRESS, getKeyMods());
+                        _glfwInputRawMouseClick(window, WM_XBUTTONDOWN, XBUTTON1 << 16);
                     }
 
                     if (buttonFlags & RI_MOUSE_BUTTON_4_UP)
                     {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_4, GLFW_RELEASE, getKeyMods());
+                        _glfwInputRawMouseClick(window, WM_XBUTTONUP, XBUTTON1 << 16);
                     }
                     
                     if (buttonFlags & RI_MOUSE_BUTTON_5_DOWN)
                     {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_5, GLFW_PRESS, getKeyMods());
+                        _glfwInputRawMouseClick(window, WM_XBUTTONDOWN, XBUTTON2 << 16);
                     }
 
                     if (buttonFlags & RI_MOUSE_BUTTON_5_UP)
                     {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_5, GLFW_RELEASE, getKeyMods());
+                        _glfwInputRawMouseClick(window, WM_XBUTTONUP, XBUTTON2 << 16);
                     }
 
                     for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
