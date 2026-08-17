@@ -159,6 +159,18 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     if (action == GLFW_PRESS )
     {
         printf("%0.3f: mouse button %d PRESSED\n", glfwGetTime(), button );
+        if (mods & GLFW_MOD_SHIFT) {
+            if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL)
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                printf("(( cursor is disabled ))\n");
+            }
+            else
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                printf("(( cursor is normal ))\n");
+            }
+        }
     }
     else
     {

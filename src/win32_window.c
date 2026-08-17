@@ -541,6 +541,176 @@ static void maximizeWindowManually(_GLFWwindow* window)
                  SWP_NOACTIVATE | SWP_NOZORDER | SWP_FRAMECHANGED);
 }
 
+void _glfwInputRawMouseClick(_GLFWwindow* window, UINT message, int wParam)
+{
+    if (window->win32.handle)
+    {
+        MSG msg;
+        // NOTE: omit setting wParam (modifiers) and lParam (cursor coordinate) as we do not use them.
+        msg.hwnd = window->win32.handle;
+        msg.message = message;
+        msg.wParam = wParam;
+        // HACK: Use DispatchMessage to make Windows aware of the updated button state when using RIDEV_NOLEGACY.
+        DispatchMessageW(&msg);
+    }
+}
+
+void _glfwUpdateKeyState(INT key, BYTE state)
+{
+    BYTE keyState[256];
+    GetKeyboardState(keyState);
+    if (key >= 0 && key < 256 && keyState[key] != state)
+    {
+        keyState[key] = state;
+        SetKeyboardState(keyState);
+    }
+}
+
+static void _glfwProcessRawMouse(_GLFWwindow* window, RAWMOUSE mouse)
+{
+    int dx = 0, dy = 0;
+
+    // a callback might change raw input status, in which case
+    // we stop inputing movement but process mouse button inputs
+    if (window == _glfw.win32.disabledCursorWindow
+        && _glfw.win32.disabledCursorWindow->rawMouseMotion)
+    {
+        if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
+        {
+            POINT pos = {0};
+            int width, height;
+
+            if (mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
+            {
+                pos.x += GetSystemMetrics(SM_XVIRTUALSCREEN);
+                pos.y += GetSystemMetrics(SM_YVIRTUALSCREEN);
+                width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+                height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+            }
+            else
+            {
+                width = GetSystemMetrics(SM_CXSCREEN);
+                height = GetSystemMetrics(SM_CYSCREEN);
+            }
+
+            pos.x += (int)((mouse.lLastX / 65535.f) * width);
+            pos.y += (int)((mouse.lLastY / 65535.f) * height);
+            ScreenToClient(window->win32.handle, &pos);
+
+            dx = pos.x - window->win32.lastCursorPosX;
+            dy = pos.y - window->win32.lastCursorPosY;
+        }
+        else
+        {
+            if (mouse.lLastX || mouse.lLastY)
+            {
+                dx = mouse.lLastX;
+                dy = mouse.lLastY;
+            }
+        }
+
+        if (dx != 0 || dy != 0)
+        {
+            _glfwInputCursorPos(window,
+                                window->virtualCursorPosX + dx,
+                                window->virtualCursorPosY + dy);
+
+            window->win32.lastCursorPosX += dx;
+            window->win32.lastCursorPosY += dy;
+        }
+    }
+
+    // Instead of reposting the events, we duplicate the button events' handlers here.
+
+
+    USHORT buttonFlags = mouse.usButtonFlags;
+
+    // if any down or up button (anything except RI_MOUSE_WHEEL or RI_MOUSE_HWHEEL), process
+    if (buttonFlags & 0xFFFF & ~(RI_MOUSE_WHEEL | RI_MOUSE_HWHEEL))
+    {
+        int i;
+
+        for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
+        {
+            if (window->mouseButtons[i] == GLFW_PRESS)
+                break;
+        }
+
+        if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+        {
+            _glfwUpdateKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON, 1 << 7);
+            _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_RBUTTONDOWN : WM_LBUTTONDOWN, 0);
+        }
+
+        if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP)
+        {
+            _glfwUpdateKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON, 0);
+            _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_RBUTTONUP : WM_LBUTTONUP, 0);
+        }
+
+        if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+        {
+            _glfwUpdateKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_LBUTTON : VK_RBUTTON, 1 << 7);
+            _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_LBUTTONDOWN : WM_RBUTTONDOWN, 0);
+        }
+
+        if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
+        {
+            _glfwUpdateKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_LBUTTON : VK_RBUTTON, 0);
+            _glfwInputRawMouseClick(window, GetSystemMetrics(SM_SWAPBUTTON) ? WM_LBUTTONUP : WM_RBUTTONUP, 0);
+        }
+
+        if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
+        {
+            _glfwUpdateKeyState(VK_MBUTTON, 1 << 7);
+            _glfwInputRawMouseClick(window, WM_MBUTTONDOWN, 0);
+        }
+
+        if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
+        {
+            _glfwUpdateKeyState(VK_MBUTTON, 0);
+            _glfwInputRawMouseClick(window, WM_MBUTTONUP, 0);
+        }
+
+        if (buttonFlags & RI_MOUSE_BUTTON_4_DOWN)
+        {
+            _glfwInputRawMouseClick(window, WM_XBUTTONDOWN, XBUTTON1 << 16);
+        }
+
+        if (buttonFlags & RI_MOUSE_BUTTON_4_UP)
+        {
+            _glfwInputRawMouseClick(window, WM_XBUTTONUP, XBUTTON1 << 16);
+        }
+
+        if (buttonFlags & RI_MOUSE_BUTTON_5_DOWN)
+        {
+            _glfwInputRawMouseClick(window, WM_XBUTTONDOWN, XBUTTON2 << 16);
+        }
+
+        if (buttonFlags & RI_MOUSE_BUTTON_5_UP)
+        {
+            _glfwInputRawMouseClick(window, WM_XBUTTONUP, XBUTTON2 << 16);
+        }
+
+        for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
+        {
+            if (window->mouseButtons[i] == GLFW_PRESS)
+                break;
+        }
+    }
+    // Handle mouse wheel events
+    if (buttonFlags & RI_MOUSE_WHEEL)
+    {
+        SHORT wheelDelta = (SHORT)mouse.usButtonData;
+        _glfwInputScroll(window, 0.0, wheelDelta / (double) WHEEL_DELTA);
+    }
+    if (buttonFlags & RI_MOUSE_HWHEEL)
+    {
+        SHORT wheelDelta = (SHORT)mouse.usButtonData;
+        _glfwInputScroll(window, -wheelDelta / (double) WHEEL_DELTA, 0.0);
+    }
+}
+
 // Window procedure for user-created windows
 //
 static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -908,6 +1078,40 @@ static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
             window->win32.lastCursorPosY = y;
 
             return 0;
+        }
+
+        case WM_INPUT:
+        {
+            UINT size = 0;
+            HRAWINPUT ri = (HRAWINPUT) lParam;
+            RAWINPUT* data = NULL;
+
+            if (_glfw.win32.disabledCursorWindow != window)
+                break;
+            if (!window->rawMouseMotion)
+                break;
+
+            GetRawInputData(ri, RID_INPUT, NULL, &size, sizeof(RAWINPUTHEADER));
+            if (size > (UINT) _glfw.win32.rawInputSize)
+            {
+                _glfw_free(_glfw.win32.rawInput);
+                _glfw.win32.rawInput = _glfw_calloc(size, 1);
+                _glfw.win32.rawInputSize = size;
+            }
+
+            size = _glfw.win32.rawInputSize;
+            if (GetRawInputData(ri, RID_INPUT,
+                                _glfw.win32.rawInput, &size,
+                                sizeof(RAWINPUTHEADER)) == (UINT) -1)
+            {
+                _glfwInputError(GLFW_PLATFORM_ERROR,
+                                "Win32: Failed to retrieve raw input data");
+                break;
+            }
+
+            data = _glfw.win32.rawInput;
+            _glfwProcessRawMouse(window, data->data.mouse);
+            break;
         }
 
         case WM_MOUSELEAVE:
@@ -2082,142 +2286,7 @@ void _processRawInput(void)
         {
             if (data->header.dwType == RIM_TYPEMOUSE)
             {
-                int dx = 0, dy = 0;
-            
-                // a callback might change raw input status, in which case
-                // we stop inputing movement but process mouse button inputs
-                if (window == _glfw.win32.disabledCursorWindow
-                    && _glfw.win32.disabledCursorWindow->rawMouseMotion)
-                {
-                    if (data->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE)
-                    {
-                        POINT pos = {0};
-                        int width, height;
-
-                        if (data->data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
-                        {
-                            pos.x += GetSystemMetrics(SM_XVIRTUALSCREEN);
-                            pos.y += GetSystemMetrics(SM_YVIRTUALSCREEN);
-                            width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-                            height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-                        }
-                        else
-                        {
-                            width = GetSystemMetrics(SM_CXSCREEN);
-                            height = GetSystemMetrics(SM_CYSCREEN);
-                        }
-
-                        pos.x += (int)((data->data.mouse.lLastX / 65535.f) * width);
-                        pos.y += (int)((data->data.mouse.lLastY / 65535.f) * height);
-                        ScreenToClient(window->win32.handle, &pos);
-
-                        dx = pos.x - window->win32.lastCursorPosX;
-                        dy = pos.y - window->win32.lastCursorPosY;
-                    }
-                    else
-                    {
-                        if (data->data.mouse.lLastX || data->data.mouse.lLastY)
-                        {
-                            dx = data->data.mouse.lLastX;
-                            dy = data->data.mouse.lLastY;
-                        }
-                    }
-
-                    if (dx != 0 || dy != 0)
-                    {
-                        _glfwInputCursorPos(window,
-                                            window->virtualCursorPosX + dx,
-                                            window->virtualCursorPosY + dy);
-
-                        window->win32.lastCursorPosX += dx;
-                        window->win32.lastCursorPosY += dy;
-                    }
-                }
-
-                // Instead of reposting the events, we duplicate the button events' handlers here.
-
-            
-                USHORT buttonFlags = data->data.mouse.usButtonFlags;
-                HWND hwnd = window->win32.handle;
-
-                // if any down or up button (anything except RI_MOUSE_WHEEL or RI_MOUSE_HWHEEL), process
-                if (buttonFlags & 0xFFFF & ~(RI_MOUSE_WHEEL | RI_MOUSE_HWHEEL))
-                {
-                    int i;
-
-                    for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
-                    {
-                        if (window->mouseButtons[i] == GLFW_PRESS)
-                            break;
-                    }
-                
-                    if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
-                    {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS, getKeyMods());
-                    }
-
-                    if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP)
-                    {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_RELEASE, getKeyMods());
-                    }
-                    
-                    if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
-                    {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_PRESS, getKeyMods());
-                    }
-
-                    if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
-                    {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_RELEASE, getKeyMods());
-                    }
-                    
-                    if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
-                    {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_PRESS, getKeyMods());
-                    }
-
-                    if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
-                    {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_RELEASE, getKeyMods());
-                    }
-                    
-                    if (buttonFlags & RI_MOUSE_BUTTON_4_DOWN)
-                    {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_4, GLFW_PRESS, getKeyMods());
-                    }
-
-                    if (buttonFlags & RI_MOUSE_BUTTON_4_UP)
-                    {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_4, GLFW_RELEASE, getKeyMods());
-                    }
-                    
-                    if (buttonFlags & RI_MOUSE_BUTTON_5_DOWN)
-                    {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_5, GLFW_PRESS, getKeyMods());
-                    }
-
-                    if (buttonFlags & RI_MOUSE_BUTTON_5_UP)
-                    {
-                        _glfwInputMouseClick(window, GLFW_MOUSE_BUTTON_5, GLFW_RELEASE, getKeyMods());
-                    }
-
-                    for (i = 0;  i <= GLFW_MOUSE_BUTTON_LAST;  i++)
-                    {
-                        if (window->mouseButtons[i] == GLFW_PRESS)
-                            break;
-                    }
-                }
-                // Handle mouse wheel events
-                if (buttonFlags & RI_MOUSE_WHEEL)
-                {
-                    SHORT wheelDelta = (SHORT)data->data.mouse.usButtonData;
-                    _glfwInputScroll(window, 0.0, wheelDelta / (double) WHEEL_DELTA);
-                }
-                if (buttonFlags & RI_MOUSE_HWHEEL)
-                {
-                    SHORT wheelDelta = (SHORT)data->data.mouse.usButtonData;
-                    _glfwInputScroll(window, -wheelDelta / (double) WHEEL_DELTA, 0.0);
-                }
+                _glfwProcessRawMouse(window, data->data.mouse);
             }
 
             data = NEXTRAWINPUTBLOCK(data);
