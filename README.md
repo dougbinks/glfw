@@ -120,7 +120,8 @@ information on what to include when reporting a bug.
 
 ## Changelog since 3.5
 
-None.
+ - [Win32] Improved raw mouse motion performance using buffered input (#2684) (#2750)
+
 
 ## Changelog since 3.4
 

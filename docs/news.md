@@ -22,6 +22,14 @@ destroyed using @ref glfwDestroyUserContext, and managed with
 @ref glfwMakeUserContextCurrent and @ref glfwGetCurrentUserContext.
 For more information see the [user context](@ref context_user) documentation.
 
+
+### Improved raw mouse motion performance using buffered input on Windows {#win32_buff_raw_mouse}
+
+On the Windows platform raw mouse motion now uses a buffered input approach
+for significantly improved performance, especially when using a high poll rate
+mouse.
+
+
 ### Unlimited mouse buttons {#unlimited_mouse_buttons}
 
 GLFW now has an input mode which allows an unlimited number of mouse buttons to
@@ -42,13 +50,6 @@ the `EGLConfig` of a window that has a `EGLSurface`.
 
 GLFW now provides the @ref glfwGetGLXFBConfig native access function for
 querying the `GLXFBConfig` of a window that has a `GLXWindow`.
-
-
-### Improved raw mouse motion performance using buffered input on Windows {#win32_buff_raw_mouse}
-
-On the Windows platform raw mouse motion now uses a buffered input approach
-for significantly improved performance, especially when using a high poll rate
-mouse.
 
 
 ## Caveats {#caveats}
